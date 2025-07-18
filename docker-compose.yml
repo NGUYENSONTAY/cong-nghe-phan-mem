@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: bookstore-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: bookstore
+      MYSQL_USER: bookstore_user
+      MYSQL_PASSWORD: bookstore_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bookstore-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/bookstore?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: bookstore_user
+      SPRING_DATASOURCE_PASSWORD: bookstore_password
+      JWT_SECRET: P3NUO2ZLYCqB42FUNrMpS2t8eegbHQCg+5wnFHkcAzxVQpRbCOmZVasj8A3Qz2Jgw24T+UmKk/0X/xnPVZ+khQ==
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bookstore-frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://localhost:8080/api
+      REACT_APP_APP_NAME: Thế Giới Sách
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # Adminer (Database Management)
+  adminer:
+    image: adminer:4.8.1
+    container_name: bookstore-adminer
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    depends_on:
+      - mysql
+    networks:
+      - bookstore-network
+
+volumes:
+  mysql_data:
+  uploads_data:
+
+networks:
+  bookstore-network:
+    driver: bridge 
