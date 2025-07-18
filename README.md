@@ -58,6 +58,7 @@ docker-compose down
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8080
 - Database Admin: http://localhost:8090
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
 
 ### 💻 Chạy Local Development
 
