@@ -69,6 +69,14 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/api/upload/image/**").permitAll()
+                // Swagger UI and OpenAPI
+                .requestMatchers(
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs/**",
+                    "/v3/swagger-ui/**"
+                ).permitAll()
                 
                 // Books - public read access
                 .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
